@@ -1,0 +1,45 @@
+!mamba install bs4==4.10.0 -y
+!mamba install html5lib==1.1 -y
+
+####import libraries######
+from bs4 import BeautifulSoup as bs
+import requests
+import html5lib
+import pandas as pd
+import re
+
+######load HTML content#######
+url= "https://en.wikipedia.org/wiki/List_of_largest_banks"
+req=requests.get(url)
+html_data=req.text
+
+######removing unnecessary charactors####
+def remove_chars(word):
+    #re.sub("["+chars_to_remove+"]","",word)
+    word = word.replace("\n","",1)
+    word=word.replace(" ","",1)
+    return word
+ 
+soup=bs(html_data,"html.parser")
+df=pd.DataFrame(columns=["Name", "Market Cap (US$ Billion)"])
+
+
+#####Load data from html content, into the df####
+name=[]
+market_cap=[]
+
+for row in soup.find_all('tbody')[2].find_all('tr'):
+    col=row.find_all('td')
+    if bool(col):
+        name.append(remove_chars(col[1].text))          #append to the list after removing special chars
+        market_cap.append(float(remove_chars(col[2].text)))
+
+df['Name']=name
+df['Market Cap (US$ Billion)']=market_cap
+
+#### display first 5 rows#####
+df.head()
+
+####load DF to a json#########
+jsn=df.to_json()
+
