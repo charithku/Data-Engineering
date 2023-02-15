@@ -1,0 +1,85 @@
+#!mamba install pandas==1.3.3 -y
+#!mamba install requests==2.26.0 -y
+
+import glob
+import pandas as pd
+from datetime import datetime
+import seaborn as sb
+
+!wget https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0221EN-SkillsNetwork/labs/module%206/Lab%20-%20Extract%20Transform%20Load/data/bank_market_cap_1.json
+!wget https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0221EN-SkillsNetwork/labs/module%206/Lab%20-%20Extract%20Transform%20Load/data/bank_market_cap_2.json
+!wget https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0221EN-SkillsNetwork/labs/module%206/Final%20Assignment/exchange_rates.csv
+
+def extract_from_json(file_to_process):
+    dataframe = pd.read_json(file_to_process, lines=True)
+    return dataframe
+
+def extract():
+    extracted_data = pd.DataFrame(columns=['Name','Market Cap (US$ Billion)'])
+    
+    for csvfile in glob.glob("bank_market_cap_1.json"):     #find all JSON files 
+        extracted_data= extracted_data.append(extract_from_json(csvfile),ignore_index=True)
+    
+    ###additional work out for prepare DataFrame####
+    
+    df2=pd.DataFrame(df1.loc[0,"Name"],index=[0])
+    df3=pd.DataFrame(df1.loc[0,"Market Cap (US$ Billion)"],index=[0])
+    
+    #getting transpose of dataframes
+    df2.T
+    df3.T
+
+    #merging data frames column wise
+    df4=pd.concat([df2.T,df3.T],axis=1)
+
+    #rename coulmn names
+    df4.columns=['Name','Market Cap (US$ Billion)']
+    df4['Market Cap (US$ Billion)']=df4['Market Cap (US$ Billion)'].astype(float)
+    extracted_data=df4
+    ###additional work out for prepare DataFrame####
+    
+    return extracted_data
+
+
+# load exchange rate file
+df5=pd.read_csv("exchange_rates.csv",index_col=0)
+
+def transform(df,decimal,base):
+    ex_rate=df5.loc[base]
+    ex_rate=ex_rate.values[0]    #get the value from the series
+    
+    df.iloc[:,1]=round(df.iloc[:,1]*ex_rate, decimal)
+    df.rename(columns={df.columns[1]:'Market Cap ('+base+'$ Billion)'},inplace=True)
+    return df
+    
+def load(target_file,data_to_load):
+    data_to_load.to_csv(target_file,index=False)
+    
+def log(message):
+    timestamp_format='%Y-%h-%d-%H:%M:%S'
+    now = datetime.now()
+    timestamp= now.strftime(timestamp_format)
+    with open("logfile.txt","a") as logfile:
+        logfile.write(timestamp+','+message+'\n')
+
+#### creating log file ####
+
+log('ETL process Started')
+
+log('Extract Phase Started')
+extracted_data=extract()
+extracted_data.head()
+log('Extract Phase Started')
+
+log("Transform phase Started")
+transformed_data = transform(extracted_data,3,'GBP')
+transformed_data.head()
+log("Transform phase Ended")
+
+log("Load phase Started")
+load("target_file.csv",transformed_data)
+log("Load phase Ended")
+
+log('ETL process Ended')
+        
+ 
